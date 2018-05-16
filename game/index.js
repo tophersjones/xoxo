@@ -3,15 +3,10 @@ import {createStore} from 'redux'
 
 export default function reducer(state={turn: 'X', board: Map()}, action) {
   // TODO
+  const newBoard = state.board.setIn(action.position, action.player)
   if (action.type === 'MOVE') {
-    if (action.player === 'X') {
-      ongoing['X'].push(action.position)
-    } else {
-      ongoing['O'].push(action.position)
-    }
-    winner()
     console.log('ONGOING', ongoing)
-    return { turn: state.turn === 'X' ? 'O' : 'X', board: state.board.setIn(action.position, action.player) } 
+    return { turn: state.turn === 'X' ? 'O' : 'X', board: newBoard, winner: winner(newBoard) } 
   } 
   return state
 }
@@ -25,20 +20,36 @@ const ongoing = {
   O: []
 }
 
-function winner() {
-  let xArr = ongoing['X']
-  let oArr = ongoing['O']
-  let xCounter = 0
-  let oCounter = 0
-  for (let i = 1; i < xArr.length; i++) {
-    if (xArr[i][0] === xArr[i-1][0]) {
-      xCounter++
-    } else {
-      xCounter = 0
+function streak (board, firstCoord, ...restCoords) {
+  const player = board.getIn(firstCoord)
+  if (player) {
+    for (let i = 0; i < restCoords.length; i++) {
+      if (board.getIn(restCoords[i]) !== player) {
+        return null
+      }
     }
-    if (xCounter === 2) {
-      console.log('X wins')
-    
+    return player
+  }
+  return null
+}
+
+function winner(board) {
+  for (let i = 0; i < 3; i++) {
+    let column = streak(board, [0, i], [1, i], [2, i])
+    if (column) return column
+    let row = streak(board, [i, 0], [i, 1], [i, 2])
+    if (row) return row
+  }
+  let diaganolOne = streak(board, [0, 0], [1, 1], [2, 2])
+  if (diaganolOne) return diaganolOne
+  let diaganolTwo = streak(board, [0, 2], [1, 1], [2, 0])
+  if (diaganolTwo) return diaganolTwo
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      if (!board.hasIn([i, j])) {
+        return null
+      }
     }
   }
+  return 'draw'
 }
